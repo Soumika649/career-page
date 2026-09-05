@@ -1,5 +1,7 @@
+
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 export type HomeJob = {
@@ -33,7 +35,9 @@ export function HomeJobBrowser({
       new Set(
         jobs
           .map((job) => job.location?.trim())
-          .filter(Boolean)
+          .filter(
+            (value): value is string => Boolean(value)
+          )
       )
     ).sort();
   }, [jobs]);
@@ -43,7 +47,9 @@ export function HomeJobBrowser({
       new Set(
         jobs
           .map((job) => job.job_type?.trim())
-          .filter(Boolean)
+          .filter(
+            (value): value is string => Boolean(value)
+          )
       )
     ).sort();
   }, [jobs]);
@@ -55,8 +61,12 @@ export function HomeJobBrowser({
       const matchesSearch =
         !searchValue ||
         job.title.toLowerCase().includes(searchValue) ||
-        job.department?.toLowerCase().includes(searchValue) ||
-        job.company_name?.toLowerCase().includes(searchValue);
+        job.department
+          ?.toLowerCase()
+          .includes(searchValue) ||
+        job.company_name
+          ?.toLowerCase()
+          .includes(searchValue);
 
       const matchesLocation =
         location === "all" ||
@@ -76,7 +86,9 @@ export function HomeJobBrowser({
 
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredJobs.length / JOBS_PER_PAGE)
+    Math.ceil(
+      filteredJobs.length / JOBS_PER_PAGE
+    )
   );
 
   const safeCurrentPage = Math.min(
@@ -102,18 +114,7 @@ export function HomeJobBrowser({
     filteredJobs.length
   );
 
-  function handleSearch(value: string) {
-    setSearch(value);
-    setCurrentPage(1);
-  }
-
-  function handleLocation(value: string) {
-    setLocation(value);
-    setCurrentPage(1);
-  }
-
-  function handleJobType(value: string) {
-    setJobType(value);
+  function resetPage() {
     setCurrentPage(1);
   }
 
@@ -121,18 +122,22 @@ export function HomeJobBrowser({
     setSearch("");
     setLocation("all");
     setJobType("all");
-    setCurrentPage(1);
+    resetPage();
   }
 
   function goToPage(page: number) {
-    if (page < 1 || page > totalPages) return;
+    if (page < 1 || page > totalPages) {
+      return;
+    }
 
     setCurrentPage(page);
 
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    document
+      .getElementById("jobs-heading")
+      ?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
   }
 
   return (
@@ -156,7 +161,6 @@ export function HomeJobBrowser({
 
       {/* Filters */}
       <div className="mb-8 grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-3">
-        {/* Search */}
         <div>
           <label
             htmlFor="job-search"
@@ -169,15 +173,15 @@ export function HomeJobBrowser({
             id="job-search"
             type="search"
             value={search}
-            onChange={(e) =>
-              handleSearch(e.target.value)
-            }
+            onChange={(event) => {
+              setSearch(event.target.value);
+              resetPage();
+            }}
             placeholder="Search by job title..."
             className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
           />
         </div>
 
-        {/* Location */}
         <div>
           <label
             htmlFor="job-location"
@@ -189,9 +193,10 @@ export function HomeJobBrowser({
           <select
             id="job-location"
             value={location}
-            onChange={(e) =>
-              handleLocation(e.target.value)
-            }
+            onChange={(event) => {
+              setLocation(event.target.value);
+              resetPage();
+            }}
             className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
           >
             <option value="all">
@@ -206,7 +211,6 @@ export function HomeJobBrowser({
           </select>
         </div>
 
-        {/* Job Type */}
         <div>
           <label
             htmlFor="job-type"
@@ -218,9 +222,10 @@ export function HomeJobBrowser({
           <select
             id="job-type"
             value={jobType}
-            onChange={(e) =>
-              handleJobType(e.target.value)
-            }
+            onChange={(event) => {
+              setJobType(event.target.value);
+              resetPage();
+            }}
             className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
           >
             <option value="all">
@@ -236,7 +241,7 @@ export function HomeJobBrowser({
         </div>
       </div>
 
-      {/* Results information */}
+      {/* Results count */}
       <div
         className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
         aria-live="polite"
@@ -265,29 +270,27 @@ export function HomeJobBrowser({
           <button
             type="button"
             onClick={clearFilters}
-            className="text-left text-sm font-medium text-slate-700 underline underline-offset-4 hover:text-slate-950"
+            className="text-sm font-medium text-slate-700 underline underline-offset-4 hover:text-slate-950"
           >
             Clear filters
           </button>
         )}
       </div>
 
-      {/* Job Grid */}
+      {/* Jobs */}
       {paginatedJobs.length > 0 ? (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {paginatedJobs.map((job) => (
             <article
               key={job.id}
-              className="flex min-h-[240px] flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              className="flex min-h-[250px] flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
             >
-              {/* Company */}
-              {job.company_name && (
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {job.company_name}
-                </p>
-              )}
+              {/* COMPANY NAME */}
+              <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500">
+                {job.company_name || "Company"}
+              </p>
 
-              {/* Title */}
+              {/* JOB TITLE */}
               <h3 className="text-lg font-semibold leading-snug text-slate-900">
                 {job.title}
               </h3>
@@ -299,7 +302,7 @@ export function HomeJobBrowser({
                 </p>
               )}
 
-              {/* Job metadata */}
+              {/* Metadata */}
               <div className="mt-5 flex flex-wrap gap-2">
                 {job.location && (
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
@@ -320,10 +323,10 @@ export function HomeJobBrowser({
                 )}
               </div>
 
-              {/* View role */}
+              {/* View company careers page */}
               <div className="mt-auto pt-6">
                 {job.company_slug ? (
-                  <a
+                  <Link
                     href={`/${job.company_slug}/careers`}
                     className="inline-flex items-center text-sm font-semibold text-slate-900 underline underline-offset-4 transition hover:text-slate-600"
                   >
@@ -334,10 +337,10 @@ export function HomeJobBrowser({
                     >
                       →
                     </span>
-                  </a>
+                  </Link>
                 ) : (
-                  <span className="text-sm font-medium text-slate-500">
-                    View role
+                  <span className="text-sm text-slate-400">
+                    Company page unavailable
                   </span>
                 )}
               </div>
@@ -345,7 +348,6 @@ export function HomeJobBrowser({
           ))}
         </div>
       ) : (
-        /* Empty state */
         <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center">
           <h3 className="text-lg font-semibold text-slate-900">
             No matching jobs
@@ -367,74 +369,68 @@ export function HomeJobBrowser({
 
       {/* Pagination */}
       {filteredJobs.length > JOBS_PER_PAGE && (
-        <nav
-          className="mt-10 flex flex-wrap items-center justify-center gap-2"
-          aria-label="Job results pagination"
-        >
-          {/* Previous */}
-          <button
-            type="button"
-            onClick={() =>
-              goToPage(safeCurrentPage - 1)
-            }
-            disabled={safeCurrentPage === 1}
-            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-            aria-label="Previous page"
+        <>
+          <nav
+            className="mt-10 flex flex-wrap items-center justify-center gap-2"
+            aria-label="Job results pagination"
           >
-            ← Previous
-          </button>
+            <button
+              type="button"
+              onClick={() =>
+                goToPage(safeCurrentPage - 1)
+              }
+              disabled={safeCurrentPage === 1}
+              className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              ← Previous
+            </button>
 
-          {/* Page numbers */}
-          <div className="flex items-center gap-1">
-            {Array.from(
-              { length: totalPages },
-              (_, index) => index + 1
-            ).map((page) => {
-              const isActive =
-                page === safeCurrentPage;
+            <div className="flex items-center gap-1">
+              {Array.from(
+                { length: totalPages },
+                (_, index) => index + 1
+              ).map((page) => {
+                const active =
+                  page === safeCurrentPage;
 
-              return (
-                <button
-                  key={page}
-                  type="button"
-                  onClick={() => goToPage(page)}
-                  aria-current={
-                    isActive ? "page" : undefined
-                  }
-                  className={`min-w-10 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
-                    isActive
-                      ? "bg-slate-900 text-white"
-                      : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-                  }`}
-                >
-                  {page}
-                </button>
-              );
-            })}
-          </div>
+                return (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => goToPage(page)}
+                    aria-current={
+                      active ? "page" : undefined
+                    }
+                    className={`min-w-10 rounded-xl px-3 py-2.5 text-sm font-semibold ${
+                      active
+                        ? "bg-slate-900 text-white"
+                        : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+            </div>
 
-          {/* Next */}
-          <button
-            type="button"
-            onClick={() =>
-              goToPage(safeCurrentPage + 1)
-            }
-            disabled={
-              safeCurrentPage === totalPages
-            }
-            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-            aria-label="Next page"
-          >
-            Next →
-          </button>
-        </nav>
-      )}
+            <button
+              type="button"
+              onClick={() =>
+                goToPage(safeCurrentPage + 1)
+              }
+              disabled={
+                safeCurrentPage === totalPages
+              }
+              className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Next →
+            </button>
+          </nav>
 
-      {/* Page information */}
-      {filteredJobs.length > JOBS_PER_PAGE && (
-        <p className="mt-4 text-center text-xs text-slate-500">
-          Page {safeCurrentPage} of {totalPages}
-        </p>
+          <p className="mt-4 text-center text-xs text-slate-500">
+            Page {safeCurrentPage} of {totalPages}
+          </p>
+        </>
       )}
     </section>
   );
