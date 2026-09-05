@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-type Job = {
+export type HomeJob = {
   id: string;
   title: string;
   location?: string | null;
@@ -15,12 +15,12 @@ type Job = {
 };
 
 type HomeJobBrowserProps = {
-  jobs: Job[];
+  jobs: HomeJob[];
 };
 
 const JOBS_PER_PAGE = 9;
 
-export default function HomeJobBrowser({
+export function HomeJobBrowser({
   jobs,
 }: HomeJobBrowserProps) {
   const [search, setSearch] = useState("");
@@ -28,7 +28,6 @@ export default function HomeJobBrowser({
   const [jobType, setJobType] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Get unique locations
   const locations = useMemo(() => {
     return Array.from(
       new Set(
@@ -39,7 +38,6 @@ export default function HomeJobBrowser({
     ).sort();
   }, [jobs]);
 
-  // Get unique job types
   const jobTypes = useMemo(() => {
     return Array.from(
       new Set(
@@ -50,7 +48,6 @@ export default function HomeJobBrowser({
     ).sort();
   }, [jobs]);
 
-  // Filter jobs
   const filteredJobs = useMemo(() => {
     const searchValue = search.trim().toLowerCase();
 
@@ -77,13 +74,11 @@ export default function HomeJobBrowser({
     });
   }, [jobs, search, location, jobType]);
 
-  // Pagination
   const totalPages = Math.max(
     1,
     Math.ceil(filteredJobs.length / JOBS_PER_PAGE)
   );
 
-  // Make sure current page is always valid
   const safeCurrentPage = Math.min(
     currentPage,
     totalPages
@@ -134,7 +129,6 @@ export default function HomeJobBrowser({
 
     setCurrentPage(page);
 
-    // Scroll back to the jobs section
     window.scrollTo({
       top: 0,
       behavior: "smooth",
@@ -175,7 +169,9 @@ export default function HomeJobBrowser({
             id="job-search"
             type="search"
             value={search}
-            onChange={(e) => handleSearch(e.target.value)}
+            onChange={(e) =>
+              handleSearch(e.target.value)
+            }
             placeholder="Search by job title..."
             className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
           />
@@ -324,7 +320,7 @@ export default function HomeJobBrowser({
                 )}
               </div>
 
-              {/* Bottom link */}
+              {/* View role */}
               <div className="mt-auto pt-6">
                 {job.company_slug ? (
                   <a
@@ -443,3 +439,4 @@ export default function HomeJobBrowser({
     </section>
   );
 }
+
