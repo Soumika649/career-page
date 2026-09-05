@@ -1,210 +1,445 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Input, Select } from "@/components/ui";
-import { formatRelativeDays } from "@/lib/utils";
 
-export type HomeJob = {
+type Job = {
   id: string;
-  company_id: string;
   title: string;
-  job_slug: string;
-  department: string;
-  location: string;
-  work_policy: string;
-  employment_type: string;
-  experience_level: string;
-  job_type: string;
-  salary_range: string;
-  description: string;
-  is_open: boolean;
-  posted_at: string;
-  company: {
-    slug: string;
-    name: string;
-    tagline: string;
-    logo_url: string;
-  };
+  location?: string | null;
+  job_type?: string | null;
+  company_name?: string | null;
+  company_slug?: string | null;
+  department?: string | null;
+  work_policy?: string | null;
+  employment_type?: string | null;
 };
 
-export function HomeJobBrowser({ jobs }: { jobs: HomeJob[] }) {
-  const [query, setQuery] = useState("");
+type HomeJobBrowserProps = {
+  jobs: Job[];
+};
+
+const JOBS_PER_PAGE = 9;
+
+export default function HomeJobBrowser({
+  jobs,
+}: HomeJobBrowserProps) {
+  const [search, setSearch] = useState("");
   const [location, setLocation] = useState("all");
   const [jobType, setJobType] = useState("all");
-  const [workPolicy, setWorkPolicy] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const locations = useMemo(
-    () => Array.from(new Set(jobs.map((job) => job.location).filter(Boolean))).sort(),
-    [jobs]
-  );
+  // Get unique locations
+  const locations = useMemo(() => {
+    return Array.from(
+      new Set(
+        jobs
+          .map((job) => job.location?.trim())
+          .filter(Boolean)
+      )
+    ).sort();
+  }, [jobs]);
 
-  const jobTypes = useMemo(
-    () => Array.from(new Set(jobs.map((job) => job.job_type).filter(Boolean))).sort(),
-    [jobs]
-  );
+  // Get unique job types
+  const jobTypes = useMemo(() => {
+    return Array.from(
+      new Set(
+        jobs
+          .map((job) => job.job_type?.trim())
+          .filter(Boolean)
+      )
+    ).sort();
+  }, [jobs]);
 
-  const workPolicies = useMemo(
-    () => Array.from(new Set(jobs.map((job) => job.work_policy).filter(Boolean))).sort(),
-    [jobs]
-  );
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+  // Filter jobs
+  const filteredJobs = useMemo(() => {
+    const searchValue = search.trim().toLowerCase();
 
     return jobs.filter((job) => {
-      if (
-        q &&
-        !job.title.toLowerCase().includes(q) &&
-        !job.company.name.toLowerCase().includes(q) &&
-        !job.department.toLowerCase().includes(q)
-      ) {
-        return false;
-      }
+      const matchesSearch =
+        !searchValue ||
+        job.title.toLowerCase().includes(searchValue) ||
+        job.department?.toLowerCase().includes(searchValue) ||
+        job.company_name?.toLowerCase().includes(searchValue);
 
-      if (location !== "all" && job.location !== location) return false;
-      if (jobType !== "all" && job.job_type !== jobType) return false;
-      if (workPolicy !== "all" && job.work_policy !== workPolicy) return false;
+      const matchesLocation =
+        location === "all" ||
+        job.location?.trim() === location;
 
-      return true;
+      const matchesJobType =
+        jobType === "all" ||
+        job.job_type?.trim() === jobType;
+
+      return (
+        matchesSearch &&
+        matchesLocation &&
+        matchesJobType
+      );
     });
-  }, [jobs, query, location, jobType, workPolicy]);
+  }, [jobs, search, location, jobType]);
+
+  // Pagination
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredJobs.length / JOBS_PER_PAGE)
+  );
+
+  // Make sure current page is always valid
+  const safeCurrentPage = Math.min(
+    currentPage,
+    totalPages
+  );
+
+  const startIndex =
+    (safeCurrentPage - 1) * JOBS_PER_PAGE;
+
+  const paginatedJobs = filteredJobs.slice(
+    startIndex,
+    startIndex + JOBS_PER_PAGE
+  );
+
+  const startJob =
+    filteredJobs.length === 0
+      ? 0
+      : startIndex + 1;
+
+  const endJob = Math.min(
+    startIndex + JOBS_PER_PAGE,
+    filteredJobs.length
+  );
+
+  function handleSearch(value: string) {
+    setSearch(value);
+    setCurrentPage(1);
+  }
+
+  function handleLocation(value: string) {
+    setLocation(value);
+    setCurrentPage(1);
+  }
+
+  function handleJobType(value: string) {
+    setJobType(value);
+    setCurrentPage(1);
+  }
+
+  function clearFilters() {
+    setSearch("");
+    setLocation("all");
+    setJobType("all");
+    setCurrentPage(1);
+  }
+
+  function goToPage(page: number) {
+    if (page < 1 || page > totalPages) return;
+
+    setCurrentPage(page);
+
+    // Scroll back to the jobs section
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }
 
   return (
-    <div>
-      <div className="grid gap-3 md:grid-cols-[2fr_1fr_1fr_1fr]">
-        <Input
-          type="search"
-          placeholder="Search jobs, companies, or departments…"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          aria-label="Search jobs, companies, or departments"
-        />
-
-        <Select
-          value={location}
-          onChange={(event) => setLocation(event.target.value)}
-          aria-label="Filter jobs by location"
+    <section
+      className="w-full"
+      aria-labelledby="jobs-heading"
+    >
+      {/* Header */}
+      <div className="mb-6">
+        <h2
+          id="jobs-heading"
+          className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl"
         >
-          <option value="all">All locations</option>
-          {locations.map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </Select>
+          Explore open roles
+        </h2>
 
-        <Select
-          value={jobType}
-          onChange={(event) => setJobType(event.target.value)}
-          aria-label="Filter jobs by type"
-        >
-          <option value="all">All job types</option>
-          {jobTypes.map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </Select>
-
-        <Select
-          value={workPolicy}
-          onChange={(event) => setWorkPolicy(event.target.value)}
-          aria-label="Filter jobs by work policy"
-        >
-          <option value="all">All work policies</option>
-          {workPolicies.map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </Select>
+        <p className="mt-2 text-sm text-slate-600">
+          Find your next opportunity across our companies.
+        </p>
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-4">
-        <p className="text-sm text-slate" role="status">
-          {filtered.length} open role{filtered.length === 1 ? "" : "s"}
+      {/* Filters */}
+      <div className="mb-8 grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-3">
+        {/* Search */}
+        <div>
+          <label
+            htmlFor="job-search"
+            className="mb-2 block text-sm font-medium text-slate-700"
+          >
+            Search jobs
+          </label>
+
+          <input
+            id="job-search"
+            type="search"
+            value={search}
+            onChange={(e) => handleSearch(e.target.value)}
+            placeholder="Search by job title..."
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+          />
+        </div>
+
+        {/* Location */}
+        <div>
+          <label
+            htmlFor="job-location"
+            className="mb-2 block text-sm font-medium text-slate-700"
+          >
+            Location
+          </label>
+
+          <select
+            id="job-location"
+            value={location}
+            onChange={(e) =>
+              handleLocation(e.target.value)
+            }
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+          >
+            <option value="all">
+              All locations
+            </option>
+
+            {locations.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Job Type */}
+        <div>
+          <label
+            htmlFor="job-type"
+            className="mb-2 block text-sm font-medium text-slate-700"
+          >
+            Job type
+          </label>
+
+          <select
+            id="job-type"
+            value={jobType}
+            onChange={(e) =>
+              handleJobType(e.target.value)
+            }
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+          >
+            <option value="all">
+              All job types
+            </option>
+
+            {jobTypes.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Results information */}
+      <div
+        className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+        aria-live="polite"
+      >
+        <p className="text-sm text-slate-600">
+          {filteredJobs.length === 0 ? (
+            "No jobs found"
+          ) : (
+            <>
+              Showing{" "}
+              <span className="font-semibold text-slate-900">
+                {startJob}-{endJob}
+              </span>{" "}
+              of{" "}
+              <span className="font-semibold text-slate-900">
+                {filteredJobs.length}
+              </span>{" "}
+              jobs
+            </>
+          )}
         </p>
 
-        {(query || location !== "all" || jobType !== "all" || workPolicy !== "all") && (
+        {(search ||
+          location !== "all" ||
+          jobType !== "all") && (
           <button
             type="button"
-            onClick={() => {
-              setQuery("");
-              setLocation("all");
-              setJobType("all");
-              setWorkPolicy("all");
-            }}
-            className="text-sm font-medium text-ink underline underline-offset-4"
+            onClick={clearFilters}
+            className="text-left text-sm font-medium text-slate-700 underline underline-offset-4 hover:text-slate-950"
           >
             Clear filters
           </button>
         )}
       </div>
 
-      {filtered.length === 0 ? (
-        <div className="mt-6 border border-dashed border-line p-10 text-center">
-          <p className="font-medium text-ink">No roles found</p>
-          <p className="mt-2 text-sm text-slate">
-            Try a different search term or clear the filters.
-          </p>
-        </div>
-      ) : (
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          {filtered.map((job) => (
+      {/* Job Grid */}
+      {paginatedJobs.length > 0 ? (
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {paginatedJobs.map((job) => (
             <article
               key={job.id}
-              className="border border-line bg-paper-raised p-5 transition-colors hover:border-ink"
+              className="flex min-h-[240px] flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
             >
-              <div className="flex items-start gap-4">
-                {job.company.logo_url ? (
-                  <img
-                    src={job.company.logo_url}
-                    alt=""
-                    className="h-11 w-11 shrink-0 border border-line object-cover"
-                  />
-                ) : (
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center border border-line bg-paper font-display text-lg text-ink">
-                    {job.company.name.charAt(0).toUpperCase()}
-                  </div>
+              {/* Company */}
+              {job.company_name && (
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {job.company_name}
+                </p>
+              )}
+
+              {/* Title */}
+              <h3 className="text-lg font-semibold leading-snug text-slate-900">
+                {job.title}
+              </h3>
+
+              {/* Department */}
+              {job.department && (
+                <p className="mt-2 text-sm text-slate-600">
+                  {job.department}
+                </p>
+              )}
+
+              {/* Job metadata */}
+              <div className="mt-5 flex flex-wrap gap-2">
+                {job.location && (
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                    {job.location}
+                  </span>
                 )}
 
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-medium text-ink">{job.title}</h3>
-                  <p className="mt-1 text-sm text-slate">{job.company.name}</p>
-                </div>
+                {job.job_type && (
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                    {job.job_type}
+                  </span>
+                )}
+
+                {job.work_policy && (
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                    {job.work_policy}
+                  </span>
+                )}
               </div>
 
-              <div className="mt-5 flex flex-wrap gap-2 text-xs text-slate">
-                {[job.department, job.location, job.work_policy, job.employment_type]
-                  .filter(Boolean)
-                  .map((item) => (
-                    <span key={item} className="border border-line px-2 py-1">
-                      {item}
+              {/* Bottom link */}
+              <div className="mt-auto pt-6">
+                {job.company_slug ? (
+                  <a
+                    href={`/${job.company_slug}/careers`}
+                    className="inline-flex items-center text-sm font-semibold text-slate-900 underline underline-offset-4 transition hover:text-slate-600"
+                  >
+                    View role
+                    <span
+                      aria-hidden="true"
+                      className="ml-1"
+                    >
+                      →
                     </span>
-                  ))}
-              </div>
-
-              <p className="mt-4 line-clamp-2 text-sm leading-6 text-ink-soft">
-                {job.description || job.company.tagline || "View this role on the company careers page."}
-              </p>
-
-              <div className="mt-5 flex items-center justify-between gap-4">
-                <span className="text-xs text-slate">
-                  {formatRelativeDays(job.posted_at)}
-                </span>
-
-                <Link
-                  href={`/${job.company.slug}/careers#${job.job_slug}`}
-                  className="text-sm font-medium text-ink underline underline-offset-4"
-                >
-                  View job
-                </Link>
+                  </a>
+                ) : (
+                  <span className="text-sm font-medium text-slate-500">
+                    View role
+                  </span>
+                )}
               </div>
             </article>
           ))}
         </div>
+      ) : (
+        /* Empty state */
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center">
+          <h3 className="text-lg font-semibold text-slate-900">
+            No matching jobs
+          </h3>
+
+          <p className="mt-2 text-sm text-slate-600">
+            Try changing your search or filters.
+          </p>
+
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="mt-5 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700"
+          >
+            Clear filters
+          </button>
+        </div>
       )}
-    </div>
+
+      {/* Pagination */}
+      {filteredJobs.length > JOBS_PER_PAGE && (
+        <nav
+          className="mt-10 flex flex-wrap items-center justify-center gap-2"
+          aria-label="Job results pagination"
+        >
+          {/* Previous */}
+          <button
+            type="button"
+            onClick={() =>
+              goToPage(safeCurrentPage - 1)
+            }
+            disabled={safeCurrentPage === 1}
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label="Previous page"
+          >
+            ← Previous
+          </button>
+
+          {/* Page numbers */}
+          <div className="flex items-center gap-1">
+            {Array.from(
+              { length: totalPages },
+              (_, index) => index + 1
+            ).map((page) => {
+              const isActive =
+                page === safeCurrentPage;
+
+              return (
+                <button
+                  key={page}
+                  type="button"
+                  onClick={() => goToPage(page)}
+                  aria-current={
+                    isActive ? "page" : undefined
+                  }
+                  className={`min-w-10 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
+                    isActive
+                      ? "bg-slate-900 text-white"
+                      : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  {page}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Next */}
+          <button
+            type="button"
+            onClick={() =>
+              goToPage(safeCurrentPage + 1)
+            }
+            disabled={
+              safeCurrentPage === totalPages
+            }
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label="Next page"
+          >
+            Next →
+          </button>
+        </nav>
+      )}
+
+      {/* Page information */}
+      {filteredJobs.length > JOBS_PER_PAGE && (
+        <p className="mt-4 text-center text-xs text-slate-500">
+          Page {safeCurrentPage} of {totalPages}
+        </p>
+      )}
+    </section>
   );
 }
