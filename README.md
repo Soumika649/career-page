@@ -854,13 +854,7 @@ Add:
 - Remote/Hybrid/Onsite
 - Full-time/Part-time/Contract
 
-### 3. Pagination
 
-If there are thousands of jobs, don't load every job on the homepage.
-
-Use database pagination.
-
----
 
 # 24. Phase 2 — Job seeker accounts
 
@@ -1059,7 +1053,8 @@ while keeping the homepage shared by both audiences.
 | Public careers pages | ✅ | |
 | Homepage job search | ✅ | |
 | Homepage filters | ✅ | |
-| Job seeker account | | 🔜 |
+| Homepage filters | ✅ | |
+| pagination for jobs section in homepage | | 🔜 |
 | Saved jobs | | 🔜 |
 | Applications | | 🔜 |
 | Job detail URLs | | 🔜 |
