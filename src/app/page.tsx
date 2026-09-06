@@ -36,12 +36,21 @@ export default async function HomePage() {
     ])
   );
 
+  // IMPORTANT: HomeJobBrowser expects flat `company_name` / `company_slug`
+  // fields on each job (see HomeJob type in HomeJobBrowser.tsx). Nesting the
+  // company info under a `company: {...}` key here — as the previous version
+  // did — leaves those flat fields undefined on every job, so the browser
+  // falls back to "Company" / "Company page unavailable" for everything.
   const publicJobs: HomeJob[] = (jobs ?? [])
     .filter((job) => companyById.has(job.company_id))
-    .map((job) => ({
-      ...job,
-      company: companyById.get(job.company_id)!,
-    }));
+    .map((job) => {
+      const company = companyById.get(job.company_id)!;
+      return {
+        ...job,
+        company_name: company.name,
+        company_slug: company.slug,
+      };
+    });
 
   const featuredCompanies = publishedCompanies.slice(0, 6);
 

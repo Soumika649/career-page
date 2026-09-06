@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -22,35 +21,28 @@ type HomeJobBrowserProps = {
 
 const JOBS_PER_PAGE = 9;
 
-export function HomeJobBrowser({
-  jobs,
-}: HomeJobBrowserProps) {
+export function HomeJobBrowser({ jobs }: HomeJobBrowserProps) {
   const [search, setSearch] = useState("");
   const [location, setLocation] = useState("all");
   const [jobType, setJobType] = useState("all");
+  const [workPolicy, setWorkPolicy] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
 
   const locations = useMemo(() => {
     return Array.from(
-      new Set(
-        jobs
-          .map((job) => job.location?.trim())
-          .filter(
-            (value): value is string => Boolean(value)
-          )
-      )
+      new Set(jobs.map((job) => job.location?.trim()).filter((value): value is string => Boolean(value)))
     ).sort();
   }, [jobs]);
 
   const jobTypes = useMemo(() => {
     return Array.from(
-      new Set(
-        jobs
-          .map((job) => job.job_type?.trim())
-          .filter(
-            (value): value is string => Boolean(value)
-          )
-      )
+      new Set(jobs.map((job) => job.job_type?.trim()).filter((value): value is string => Boolean(value)))
+    ).sort();
+  }, [jobs]);
+
+  const workPolicies = useMemo(() => {
+    return Array.from(
+      new Set(jobs.map((job) => job.work_policy?.trim()).filter((value): value is string => Boolean(value)))
     ).sort();
   }, [jobs]);
 
@@ -61,58 +53,30 @@ export function HomeJobBrowser({
       const matchesSearch =
         !searchValue ||
         job.title.toLowerCase().includes(searchValue) ||
-        job.department
-          ?.toLowerCase()
-          .includes(searchValue) ||
-        job.company_name
-          ?.toLowerCase()
-          .includes(searchValue);
+        job.department?.toLowerCase().includes(searchValue) ||
+        job.company_name?.toLowerCase().includes(searchValue);
 
-      const matchesLocation =
-        location === "all" ||
-        job.location?.trim() === location;
+      const matchesLocation = location === "all" || job.location?.trim() === location;
 
-      const matchesJobType =
-        jobType === "all" ||
-        job.job_type?.trim() === jobType;
+      const matchesJobType = jobType === "all" || job.job_type?.trim() === jobType;
 
-      return (
-        matchesSearch &&
-        matchesLocation &&
-        matchesJobType
-      );
+      const matchesWorkPolicy = workPolicy === "all" || job.work_policy?.trim() === workPolicy;
+
+      return matchesSearch && matchesLocation && matchesJobType && matchesWorkPolicy;
     });
-  }, [jobs, search, location, jobType]);
+  }, [jobs, search, location, jobType, workPolicy]);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(
-      filteredJobs.length / JOBS_PER_PAGE
-    )
-  );
+  const totalPages = Math.max(1, Math.ceil(filteredJobs.length / JOBS_PER_PAGE));
 
-  const safeCurrentPage = Math.min(
-    currentPage,
-    totalPages
-  );
+  const safeCurrentPage = Math.min(currentPage, totalPages);
 
-  const startIndex =
-    (safeCurrentPage - 1) * JOBS_PER_PAGE;
+  const startIndex = (safeCurrentPage - 1) * JOBS_PER_PAGE;
 
-  const paginatedJobs = filteredJobs.slice(
-    startIndex,
-    startIndex + JOBS_PER_PAGE
-  );
+  const paginatedJobs = filteredJobs.slice(startIndex, startIndex + JOBS_PER_PAGE);
 
-  const startJob =
-    filteredJobs.length === 0
-      ? 0
-      : startIndex + 1;
+  const startJob = filteredJobs.length === 0 ? 0 : startIndex + 1;
 
-  const endJob = Math.min(
-    startIndex + JOBS_PER_PAGE,
-    filteredJobs.length
-  );
+  const endJob = Math.min(startIndex + JOBS_PER_PAGE, filteredJobs.length);
 
   function resetPage() {
     setCurrentPage(1);
@@ -122,6 +86,7 @@ export function HomeJobBrowser({
     setSearch("");
     setLocation("all");
     setJobType("all");
+    setWorkPolicy("all");
     resetPage();
   }
 
@@ -132,40 +97,32 @@ export function HomeJobBrowser({
 
     setCurrentPage(page);
 
-    document
-      .getElementById("jobs-heading")
-      ?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
+    document.getElementById("jobs-heading")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   }
 
+  const hasActiveFilters =
+    Boolean(search) || location !== "all" || jobType !== "all" || workPolicy !== "all";
+
   return (
-    <section
-      className="w-full"
-      aria-labelledby="jobs-heading"
-    >
+    // id="jobs" is the target for the "Find jobs" nav anchor (#jobs).
+    // Without this id on the section itself, that link has nothing to scroll to.
+    <section id="jobs" className="w-full" aria-labelledby="jobs-heading">
       {/* Header */}
       <div className="mb-6">
-        <h2
-          id="jobs-heading"
-          className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl"
-        >
+        <h2 id="jobs-heading" className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
           Explore open roles
         </h2>
 
-        <p className="mt-2 text-sm text-slate-600">
-          Find your next opportunity across our companies.
-        </p>
+        <p className="mt-2 text-sm text-slate-600">Find your next opportunity across our companies.</p>
       </div>
 
       {/* Filters */}
-      <div className="mb-8 grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-3">
+      <div className="mb-8 grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-4">
         <div>
-          <label
-            htmlFor="job-search"
-            className="mb-2 block text-sm font-medium text-slate-700"
-          >
+          <label htmlFor="job-search" className="mb-2 block text-sm font-medium text-slate-700">
             Search jobs
           </label>
 
@@ -183,10 +140,7 @@ export function HomeJobBrowser({
         </div>
 
         <div>
-          <label
-            htmlFor="job-location"
-            className="mb-2 block text-sm font-medium text-slate-700"
-          >
+          <label htmlFor="job-location" className="mb-2 block text-sm font-medium text-slate-700">
             Location
           </label>
 
@@ -199,9 +153,7 @@ export function HomeJobBrowser({
             }}
             className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
           >
-            <option value="all">
-              All locations
-            </option>
+            <option value="all">All locations</option>
 
             {locations.map((item) => (
               <option key={item} value={item}>
@@ -212,10 +164,7 @@ export function HomeJobBrowser({
         </div>
 
         <div>
-          <label
-            htmlFor="job-type"
-            className="mb-2 block text-sm font-medium text-slate-700"
-          >
+          <label htmlFor="job-type" className="mb-2 block text-sm font-medium text-slate-700">
             Job type
           </label>
 
@@ -228,11 +177,33 @@ export function HomeJobBrowser({
             }}
             className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
           >
-            <option value="all">
-              All job types
-            </option>
+            <option value="all">All job types</option>
 
             {jobTypes.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="job-work-policy" className="mb-2 block text-sm font-medium text-slate-700">
+            Work policy
+          </label>
+
+          <select
+            id="job-work-policy"
+            value={workPolicy}
+            onChange={(event) => {
+              setWorkPolicy(event.target.value);
+              resetPage();
+            }}
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+          >
+            <option value="all">All work policies</option>
+
+            {workPolicies.map((item) => (
               <option key={item} value={item}>
                 {item}
               </option>
@@ -251,22 +222,13 @@ export function HomeJobBrowser({
             "No jobs found"
           ) : (
             <>
-              Showing{" "}
-              <span className="font-semibold text-slate-900">
-                {startJob}-{endJob}
-              </span>{" "}
-              of{" "}
-              <span className="font-semibold text-slate-900">
-                {filteredJobs.length}
-              </span>{" "}
-              jobs
+              Showing <span className="font-semibold text-slate-900">{startJob}-{endJob}</span> of{" "}
+              <span className="font-semibold text-slate-900">{filteredJobs.length}</span> jobs
             </>
           )}
         </p>
 
-        {(search ||
-          location !== "all" ||
-          jobType !== "all") && (
+        {hasActiveFilters && (
           <button
             type="button"
             onClick={clearFilters}
@@ -291,16 +253,10 @@ export function HomeJobBrowser({
               </p>
 
               {/* JOB TITLE */}
-              <h3 className="text-lg font-semibold leading-snug text-slate-900">
-                {job.title}
-              </h3>
+              <h3 className="text-lg font-semibold leading-snug text-slate-900">{job.title}</h3>
 
               {/* Department */}
-              {job.department && (
-                <p className="mt-2 text-sm text-slate-600">
-                  {job.department}
-                </p>
-              )}
+              {job.department && <p className="mt-2 text-sm text-slate-600">{job.department}</p>}
 
               {/* Metadata */}
               <div className="mt-5 flex flex-wrap gap-2">
@@ -331,17 +287,12 @@ export function HomeJobBrowser({
                     className="inline-flex items-center text-sm font-semibold text-slate-900 underline underline-offset-4 transition hover:text-slate-600"
                   >
                     View role
-                    <span
-                      aria-hidden="true"
-                      className="ml-1"
-                    >
+                    <span aria-hidden="true" className="ml-1">
                       →
                     </span>
                   </Link>
                 ) : (
-                  <span className="text-sm text-slate-400">
-                    Company page unavailable
-                  </span>
+                  <span className="text-sm text-slate-400">Company page unavailable</span>
                 )}
               </div>
             </article>
@@ -349,13 +300,9 @@ export function HomeJobBrowser({
         </div>
       ) : (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center">
-          <h3 className="text-lg font-semibold text-slate-900">
-            No matching jobs
-          </h3>
+          <h3 className="text-lg font-semibold text-slate-900">No matching jobs</h3>
 
-          <p className="mt-2 text-sm text-slate-600">
-            Try changing your search or filters.
-          </p>
+          <p className="mt-2 text-sm text-slate-600">Try changing your search or filters.</p>
 
           <button
             type="button"
@@ -370,15 +317,10 @@ export function HomeJobBrowser({
       {/* Pagination */}
       {filteredJobs.length > JOBS_PER_PAGE && (
         <>
-          <nav
-            className="mt-10 flex flex-wrap items-center justify-center gap-2"
-            aria-label="Job results pagination"
-          >
+          <nav className="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="Job results pagination">
             <button
               type="button"
-              onClick={() =>
-                goToPage(safeCurrentPage - 1)
-              }
+              onClick={() => goToPage(safeCurrentPage - 1)}
               disabled={safeCurrentPage === 1}
               className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
@@ -386,21 +328,15 @@ export function HomeJobBrowser({
             </button>
 
             <div className="flex items-center gap-1">
-              {Array.from(
-                { length: totalPages },
-                (_, index) => index + 1
-              ).map((page) => {
-                const active =
-                  page === safeCurrentPage;
+              {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => {
+                const active = page === safeCurrentPage;
 
                 return (
                   <button
                     key={page}
                     type="button"
                     onClick={() => goToPage(page)}
-                    aria-current={
-                      active ? "page" : undefined
-                    }
+                    aria-current={active ? "page" : undefined}
                     className={`min-w-10 rounded-xl px-3 py-2.5 text-sm font-semibold ${
                       active
                         ? "bg-slate-900 text-white"
@@ -415,12 +351,8 @@ export function HomeJobBrowser({
 
             <button
               type="button"
-              onClick={() =>
-                goToPage(safeCurrentPage + 1)
-              }
-              disabled={
-                safeCurrentPage === totalPages
-              }
+              onClick={() => goToPage(safeCurrentPage + 1)}
+              disabled={safeCurrentPage === totalPages}
               className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Next →
@@ -435,4 +367,3 @@ export function HomeJobBrowser({
     </section>
   );
 }
-
