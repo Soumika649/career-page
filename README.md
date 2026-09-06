@@ -1054,7 +1054,7 @@ while keeping the homepage shared by both audiences.
 | Homepage job search | ✅ | |
 | Homepage filters | ✅ | |
 | Homepage filters | ✅ | |
-| pagination for jobs section in homepage | | 🔜 |
+| pagination for jobs section in homepage | | ✅ |
 | Saved jobs | | 🔜 |
 | Applications | | 🔜 |
 | Job detail URLs | | 🔜 |
